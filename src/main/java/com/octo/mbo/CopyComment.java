@@ -89,25 +89,53 @@ public class CopyComment {
             if (partSrc != null && partSrc instanceof SlidePart) {
                 SlidePart slideSrc = (SlidePart) partSrc;
 
-                List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
+                Optional<String> optFirstString = extractFirstString(slideSrc);
 
-                log.info("List of notes paragraph");
-                for(String s : notesParagraphs) {
-                    log.debug(s);
+                if(!optFirstString.isPresent()) {
+                    log.warn("Slide {} has no first string in the layout. This slide has been ignored.", tgtPartName);
                 }
+                else  {
+                    final String firstString = optFirstString.get();
 
-                GroupShape shapeScr = slideSrc.getResolvedLayout().getShapeTree();
+
+                    log.debug("First String of {} is {}", tgtPartName, firstString);
+
+                    List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
+
+                    log.info("List of notes paragraph");
+                    for(String s : notesParagraphs) {
+                        log.debug(s);
+                    }
+
+                }
             }
 
         }
     }
 
-    public static List<String> extractParagraphsOfComments(SlidePart partSrc) throws Docx4JException {
-        final List<String> paragraphs = new ArrayList<>();
+    private static List<String> extractParagraphsOfComments(SlidePart partSrc) throws Docx4JException {
 
         Notes notesSrc = partSrc.getNotesSlidePart().getContents();
         GroupShape shapeNotesSrc = notesSrc.getCSld().getSpTree();
+        //Append each paragraph content in the list of paragraphs
+        Appender<String, List<String>> paragraphAppender = new Appender<String, List<String>>() {
+            List<String> appender = new ArrayList<>();
+            @Override
+            public List<String> getContent() {
+                return appender;
+            }
 
+            @Override
+            public void accept(String s) {
+                appender.add(s);
+            }
+        };
+
+        doOnEachParagraph(shapeNotesSrc, paragraphAppender);
+        return paragraphAppender.getContent();
+    }
+
+    private static <T> void doOnEachParagraph(GroupShape shapeNotesSrc, Appender<String, T> paragraphAppender) {
         for (Object o : shapeNotesSrc.getSpOrGrpSpOrGraphicFrame()) {
             if (o != null) {
                 if (o instanceof Shape) {
@@ -115,7 +143,7 @@ public class CopyComment {
                     if (txBody != null) {
                         for (CTTextParagraph tp : txBody.getP()) {
                             if (tp != null) {
-                                final StringBuffer parContent = new StringBuffer();
+                                final StringBuilder parContent = new StringBuilder();
                                 List<Object> textRuns = tp.getEGTextRun();
                                 if (textRuns != null) {
                                     for (Object otr : textRuns) {
@@ -127,14 +155,13 @@ public class CopyComment {
                                         }
                                     }
                                 }
-                                paragraphs.add(parContent.toString());
+                                paragraphAppender.accept(parContent.toString());
                             }
                         }
                     }
                 }
             }
         }
-        return paragraphs;
     }
 
 
@@ -153,27 +180,36 @@ public class CopyComment {
                 (PresentationMLPackage) OpcPackage.load(new java.io.File(srcFilePath));
         log.info("Source {} loaded", srcFilePath);
         return pMLpkgSrc;
-    }
 
-    public static void processPart(Map.Entry<PartName, Part> hmeTgt, PartName tgtPartName) {
-        log.debug("Processing {}", tgtPartName);
-        final Part tgtPart = hmeTgt.getValue();
     }
 
 
-    public static Optional<String> extractFirstString(PresentationMLPackage pMLPackage) throws org.docx4j.openpackaging.exceptions.Docx4JException {
-        for (HashMap.Entry<PartName, Part> hme : pMLPackage.getParts().getParts().entrySet()) {
-            final PartName partName = hme.getKey();
-
-            if (hme.getValue() instanceof SlidePart) {
-                SlidePart slide = (SlidePart) hme.getValue();
-                GroupShape shape = slide.getResolvedLayout().getShapeTree();
-                //TraverseSlide.doOnShape(shape, TraverseSlide::print);
-            }
+    private static Optional<String> extractFirstString(SlidePart slide) throws CopyCommentException {
+        if(slide == null || slide.getResolvedLayout() == null || slide.getResolvedLayout().getShapeTree() == null) {
+            throw new CopyCommentException("A part of the shape tree of the slide is null");
         }
 
-        return Optional.empty();
+        Appender<String, Optional<String>> firstOneExtractor = new Appender<String, Optional<String>>() {
+            String firstString;
+
+            @Override
+            public Optional<String> getContent() {
+                return firstString == null ? Optional.empty() : Optional.of(firstString) ;
+            }
+
+            @Override
+            public void accept(String s) {
+                if(firstString == null) firstString = s;
+            }
+        };
+
+        doOnEachParagraph(slide.getResolvedLayout().getShapeTree() , firstOneExtractor);
+
+        return firstOneExtractor.getContent();
     }
+
+
+
 
 
 }

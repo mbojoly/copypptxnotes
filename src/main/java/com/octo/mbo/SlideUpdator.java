@@ -31,7 +31,7 @@ class SlideUpdator {
         }
     }
 
-    static void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
+    private static void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
         if(shapeNotesSrc == null) {
             throw new CopyCommentException("ShapeNotesSrc is null");
         }

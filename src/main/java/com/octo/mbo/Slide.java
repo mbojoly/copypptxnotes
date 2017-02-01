@@ -4,6 +4,7 @@ package com.octo.mbo;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("ALL")
 public class Slide {
 
     /**

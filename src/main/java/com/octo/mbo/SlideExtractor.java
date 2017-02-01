@@ -20,7 +20,7 @@ class SlideExtractor {
     private static Logger log = LoggerFactory.getLogger(SlideExtractor.class);
     private final Map<String, Slide> slides = new HashMap<>();
 
-    public Map<String, Slide> getSlides() {
+    Map<String, Slide> getSlides() {
         return Collections.unmodifiableMap(slides);
     }
 

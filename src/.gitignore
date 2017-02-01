@@ -1,3 +1,4 @@
+sample-docs/workspace
 
 # Created by https://www.gitignore.io/api/java,maven,intellij+iml
 
@@ -32,6 +33,7 @@ buildNumber.properties
 .idea/sqlDataSources.xml
 .idea/dynamic.xml
 .idea/uiDesigner.xml
+.idea/vcs.xml
 
 # Gradle:
 .idea/gradle.xml
@@ -66,7 +68,6 @@ fabric.properties
 *.iml
 modules.xml
 .idea/misc.xml
-.idea/vcs.xml
 *.ipr
 
 
@@ -88,4 +89,3 @@ modules.xml
 hs_err_pid*
 
 # End of https://www.gitignore.io/api/java,maven,intellij+iml
-test/

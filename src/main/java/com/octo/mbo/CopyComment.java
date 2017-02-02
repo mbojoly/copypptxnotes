@@ -17,46 +17,72 @@ public class CopyComment {
 
     private static Logger log = LoggerFactory.getLogger(CopyComment.class);
 
+    private final SlideUpdator slideUpdatorInjected;
+    private SlideExtractor srcSlideExtractorInjected;
+
+    CopyComment() {
+        slideUpdatorInjected = new SlideUpdator();
+        srcSlideExtractorInjected = new SlideExtractor();
+    }
+
+    /**
+     * For testing only
+     * @param slideUpdatorInjected dependencyInjection
+     * @param srcSlideExtractorInjected dependencyInjection
+     */
+    CopyComment(SlideUpdator slideUpdatorInjected, SlideExtractor srcSlideExtractorInjected) {
+        this.slideUpdatorInjected = slideUpdatorInjected;
+        this.srcSlideExtractorInjected = srcSlideExtractorInjected;
+    }
+
 
     public static void main(String[] args) {
-
-        CommandLine cli = parseCommandLine(args);
-
-        final String SRC_FILE_PATH = cli.getOptionValue("s");
-        final String TARGET_FILE_PATH = cli.getOptionValue("t");
+        CopyComment copyComment = new CopyComment();
 
         try {
-            final PresentationMLPackage pMLpkgSrc = loadPackage(SRC_FILE_PATH);
-            final HashMap<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
+            CommandLine cli = parseCommandLine(args);
+
+            final String srcFilePath = cli.getOptionValue("s");
+            final String targetFilePath = cli.getOptionValue("t");
+
+            final PresentationMLPackage pMLpkgSrc = loadPackage(srcFilePath);
+            final Map<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
 
 
-            final PresentationMLPackage pMLpkgTgt = loadPackage(TARGET_FILE_PATH);
-            final HashMap<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
+            final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
+            final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
 
-            CheckPartMapSizesAreEqual(hmSrc, hmTgt);
+            checkPartMapSizesAreEqual(hmSrc, hmTgt);
 
             log.info("Extracting comment from source file...");
-            SlideExtractor srcSlideExtractor = extractComment(hmSrc);
+            SlideExtractor srcSlideExtractor = copyComment.extractComment(hmSrc);
 
             log.info("Extracting comment from target file...");
-            SlideExtractor tgtSlideExtractor = extractComment(hmTgt);
+            SlideExtractor tgtSlideExtractor = copyComment.extractComment(hmTgt);
 
             Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
             Map<String, Slide> tgtSlides = tgtSlideExtractor.getSlides();
 
             log.info("Merging source and target slides");
-            Map<String, Slide> slidesPerPartName = mergeSlides(TARGET_FILE_PATH, srcSlides, tgtSlides);
+            Map<String, Slide> slidesPerPartName = copyComment.mergeSlides(targetFilePath, srcSlides, tgtSlides);
 
             log.info("Updating target...");
-            updatePptxStructure(hmTgt, slidesPerPartName);
+            copyComment.updatePptxStructure(hmTgt, slidesPerPartName);
             log.info("Target updated.");
 
             log.info("Saving modified target...");
 
             // All done: save it
-            pMLpkgTgt.save(new java.io.File(TARGET_FILE_PATH));
+            pMLpkgTgt.save(new java.io.File(targetFilePath));
 
-            log.info("done .. saved " + TARGET_FILE_PATH);
+            log.info("done .. {} saved ", targetFilePath);
+        } catch (MissingOptionException mex) {
+            log.error(mex.getMessage());
+            log.debug("Error parsing command line {}", mex);
+            System.exit(-1);
+        } catch (ParseException pex) {
+            log.error("Error parsing the command line. Please use CopyComment --help", pex);
+            System.exit(-1);
         } catch (Docx4JException d4jex) {
             log.error("Exception processing the document. Exiting", d4jex);
             System.exit(-1);
@@ -66,8 +92,7 @@ public class CopyComment {
         }
     }
 
-
-    private static CommandLine parseCommandLine(String[] args) {
+    static CommandLine parseCommandLine(String[] args) throws ParseException {
         Options options = new Options();
         Option optSource = new Option("s", "Source file where the comments can be extracted (only pptx format supported)");
         optSource.setRequired(true);
@@ -82,17 +107,7 @@ public class CopyComment {
         options.addOption(optTarget);
 
         CommandLineParser cliParser = new DefaultParser();
-        CommandLine cli = null;
-        try {
-            cli = cliParser.parse(options, args);
-        } catch (MissingOptionException mex) {
-            log.error(mex.getMessage());
-            System.exit(-1);
-        } catch (ParseException pex) {
-            log.error("Error parsing the command line. Please use CopyComment --help", pex);
-            System.exit(-1);
-        }
-        return cli;
+        return cliParser.parse(options, args);
     }
 
     private static PresentationMLPackage loadPackage(final String srcFilePath) throws Docx4JException {
@@ -105,6 +120,12 @@ public class CopyComment {
 
     }
 
+    /**
+     * In the 3.3.1 version of docx4j this exception can never be thrown (but it is not documented)
+     *
+     * @param pMLpkg Package
+     * @throws CopyCommentException If elements of package are null
+     */
     private static void checkPackageNullElements(PresentationMLPackage pMLpkg) throws CopyCommentException {
         if (pMLpkg == null ||
                 pMLpkg.getParts() == null ||
@@ -113,30 +134,29 @@ public class CopyComment {
         }
     }
 
-    private static HashMap<PartName, Part> loadPptxPartMap(PresentationMLPackage pMLpkgSrc) throws Docx4JException, CopyCommentException {
+    static Map<PartName, Part> loadPptxPartMap(PresentationMLPackage pMLpkgSrc) throws Docx4JException, CopyCommentException {
         checkPackageNullElements(pMLpkgSrc);
         return pMLpkgSrc.getParts().getParts();
     }
 
-    private static void CheckPartMapSizesAreEqual(HashMap<PartName, Part> hmSrc, HashMap<PartName, Part> hmTgt) throws CopyCommentException {
+    static void checkPartMapSizesAreEqual(Map<PartName, Part> hmSrc, Map<PartName, Part> hmTgt) throws CopyCommentException {
         final int srcSize = hmSrc.size();
         final int tgtSize = hmTgt.size();
 
         if (srcSize != tgtSize) {
             throw new CopyCommentException(String.format("Source document has %s slides and target document %s.", srcSize, tgtSize));
         }
-        log.debug("HashMap of documents parts have the same size {} for src, {} for target", srcSize, tgtSize);
+        log.debug("Map of documents parts have the same size {} for src, {} for target", srcSize, tgtSize);
     }
 
-    private static SlideExtractor extractComment(HashMap<PartName, Part> hmSrc) throws CopyCommentException, Docx4JException {
-        SlideExtractor srcSlideExtractor = new SlideExtractor();
-        for (HashMap.Entry<PartName, Part> hmeSrc : hmSrc.entrySet()) {
-            srcSlideExtractor.processEntry(hmeSrc);
+    SlideExtractor extractComment(Map<PartName, Part> hmSrc) throws CopyCommentException, Docx4JException {
+        for (Map.Entry<PartName, Part> hmeSrc : hmSrc.entrySet()) {
+            srcSlideExtractorInjected.processEntry(hmeSrc);
         }
-        return srcSlideExtractor;
+        return srcSlideExtractorInjected;
     }
 
-    private static Map<String, Slide> mergeSlides(String TARGET_FILE_PATH, Map<String, Slide> srcSlides, Map<String, Slide> tgtSlides) {
+    Map<String, Slide> mergeSlides(String targetFilePath, Map<String, Slide> srcSlides, Map<String, Slide> tgtSlides) {
         Set<String> processedKeys = new HashSet<>();
 
         Map<String, Slide> slidesPerPartName = new HashMap<>();
@@ -152,7 +172,7 @@ public class CopyComment {
                     List<String> srcParagraphs = srcSlide.getParagraphs();
                     List<String> tgtParagraphs = e.getValue().getParagraphs();
                     //Preprend source comments (they are the reference)
-                    tgtParagraphs.add(0, "=== Original comments from " + TARGET_FILE_PATH + "===");
+                    tgtParagraphs.add(0, "=== Original comments from " + targetFilePath + "===");
                     tgtParagraphs.addAll(0, srcParagraphs);
                 }
             }
@@ -169,12 +189,11 @@ public class CopyComment {
         return slidesPerPartName;
     }
 
-
-    private static void updatePptxStructure(HashMap<PartName, Part> hmTgt, Map<String, Slide> slidesPerPartName) throws Docx4JException, CopyCommentException {
+    void updatePptxStructure(Map<PartName, Part> hmTgt, Map<String, Slide> slidesPerPartName) throws Docx4JException, CopyCommentException {
         for (HashMap.Entry<PartName, Part> hmeTgt : hmTgt.entrySet()) {
             String partName = hmeTgt.getKey().getName();
             if(slidesPerPartName.containsKey(partName)) {
-                SlideUpdator.processEntry(hmeTgt.getValue(), slidesPerPartName.get(partName).getParagraphs());
+                slideUpdatorInjected.processEntry(hmeTgt.getValue(), slidesPerPartName.get(partName).getParagraphs());
             }
         }
     }

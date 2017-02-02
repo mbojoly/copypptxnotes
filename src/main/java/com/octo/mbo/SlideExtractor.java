@@ -129,7 +129,9 @@ class SlideExtractor {
 
         @Override
         public void accept(String s) {
-            if(firstString == null) firstString = s;
+            if(firstString == null) {
+                firstString = s;
+            }
         }
     }
 

@@ -80,31 +80,45 @@ class SlideExtractor {
 
     <T> void doOnEachParagraph(GroupShape shapeNotesSrc, Appender<String, T> paragraphAppender) {
         for (Object o : shapeNotesSrc.getSpOrGrpSpOrGraphicFrame()) {
-            if (o != null) {
-                if (o instanceof Shape) {
-                    CTTextBody txBody = ((Shape) o).getTxBody();
-                    if (txBody != null) {
-                        for (CTTextParagraph tp : txBody.getP()) {
-                            if (tp != null) {
-                                final StringBuilder parContent = new StringBuilder();
-                                List<Object> textRuns = tp.getEGTextRun();
-                                if (textRuns != null) {
-                                    for (Object otr : textRuns) {
-                                        if (otr != null && otr instanceof CTRegularTextRun) {
-                                            CTRegularTextRun tr = (CTRegularTextRun) otr;
-                                            final String txt = tr.getT();
-                                            log.trace("Reading {}", txt);
-                                            parContent.append(txt);
-                                        }
-                                    }
-                                }
-                                paragraphAppender.accept(parContent.toString());
-                            }
-                        }
-                    }
+            if (o != null && o instanceof Shape) {
+                CTTextBody txBody = ((Shape) o).getTxBody();
+                doOnBody(paragraphAppender, txBody);
+            }
+        }
+    }
+
+    private <T> void doOnBody(Appender<String, T> paragraphAppender, CTTextBody txBody) {
+        if (txBody != null) {
+            for (CTTextParagraph tp : txBody.getP()) {
+                final StringBuilder parContent = concatenateCTRegularTextRun(tp);
+                paragraphAppender.accept(parContent.toString());
+            }
+        }
+    }
+
+    private StringBuilder concatenateCTRegularTextRun(CTTextParagraph tp) {
+        StringBuilder parContent1 = new StringBuilder();
+        if (tp != null) {
+            List<Object> textRuns = tp.getEGTextRun();
+            if (textRuns != null) {
+                for (Object otr : textRuns) {
+                    StringBuilder builder = readCTRegularTextRun(otr);
+                    parContent1.append(builder);
                 }
             }
         }
+        return parContent1;
+    }
+
+    private StringBuilder readCTRegularTextRun(Object otr) {
+        StringBuilder builder = new StringBuilder();
+        if (otr != null && otr instanceof CTRegularTextRun) {
+            CTRegularTextRun tr = (CTRegularTextRun) otr;
+            final String txt = tr.getT();
+            log.trace("Reading {}", txt);
+            builder.append(txt);
+        }
+        return builder;
     }
 
     Optional<String> extractFirstString(SlidePart slide) throws CopyCommentException {

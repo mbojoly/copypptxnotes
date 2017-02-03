@@ -7,4 +7,8 @@ public class CopyCommentException extends Exception {
         super(message);
     }
 
+    CopyCommentException(String message, Throwable t) {
+        super(message, t);
+    }
+
 }

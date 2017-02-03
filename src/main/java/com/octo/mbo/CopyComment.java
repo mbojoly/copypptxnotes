@@ -10,6 +10,10 @@ import org.docx4j.openpackaging.parts.PartName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.JAXBException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 
@@ -36,7 +40,7 @@ public class CopyComment {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws JAXBException, IOException {
         CopyComment copyComment = new CopyComment();
 
         try {
@@ -45,26 +49,32 @@ public class CopyComment {
             final String srcFilePath = cli.getOptionValue("s");
             final String targetFilePath = cli.getOptionValue("t");
 
+
             final PresentationMLPackage pMLpkgSrc = loadPackage(srcFilePath);
             final Map<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
-
-
-            final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
-            final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
-
-            checkPartMapSizesAreEqual(hmSrc, hmTgt);
 
             log.info("Extracting comment from source file...");
             SlideExtractor srcSlideExtractor = copyComment.extractComment(hmSrc);
 
+            final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
+            final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
+
+            Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
+
             log.info("Extracting comment from target file...");
             SlideExtractor tgtSlideExtractor = copyComment.extractComment(hmTgt);
 
-            Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
             Map<String, Slide> tgtSlides = tgtSlideExtractor.getSlides();
+
+            checkMapSizesAreEqual(srcSlides, tgtSlides);
 
             log.info("Merging source and target slides");
             Map<String, Slide> slidesPerPartName = copyComment.mergeSlides(targetFilePath, srcSlides, tgtSlides);
+
+            SlideDocument slideDocument = new SlideDocument();
+            slideDocument.getSlides().addAll(slidesPerPartName.values());
+            String xml = JAXBMarshaller.marshall(slideDocument);
+            Files.write(Paths.get(targetFilePath + ".xml"), xml.getBytes());
 
             log.info("Updating target...");
             copyComment.updatePptxStructure(hmTgt, slidesPerPartName);
@@ -139,7 +149,7 @@ public class CopyComment {
         return pMLpkgSrc.getParts().getParts();
     }
 
-    static void checkPartMapSizesAreEqual(Map<PartName, Part> hmSrc, Map<PartName, Part> hmTgt) throws CopyCommentException {
+    static void checkMapSizesAreEqual(Map<String, Slide> hmSrc, Map<String, Slide> hmTgt) throws CopyCommentException {
         final int srcSize = hmSrc.size();
         final int tgtSize = hmTgt.size();
 

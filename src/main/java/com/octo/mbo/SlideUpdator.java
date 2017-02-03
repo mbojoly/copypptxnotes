@@ -9,11 +9,27 @@ import org.pptx4j.pml.GroupShape;
 import org.pptx4j.pml.Notes;
 import org.pptx4j.pml.Shape;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class SlideUpdator {
 
-    static void processEntry(Part part, List<String> newParagraphs) throws Docx4JException, CopyCommentException {
+    private final SlideUpdator dependencyInjection;
+
+    SlideUpdator() {
+        dependencyInjection = this;
+    }
+
+    /**
+     * For test purpose only
+     * @param dependencyInjection All call to methods of this class will reference this injected instance that
+     *                            can be mocked
+     */
+    SlideUpdator(SlideUpdator dependencyInjection) {
+        this.dependencyInjection = dependencyInjection;
+    }
+
+    void processEntry(Part part, List<String> newParagraphs) throws Docx4JException, CopyCommentException {
         if(newParagraphs == null) {
             throw new CopyCommentException("List of newParagraphs to update is null");
         }
@@ -27,11 +43,11 @@ class SlideUpdator {
                 throw new CopyCommentException("Processing of documents without a valide SPTree of NoteSlidePart is not yet implemented");
             }
             GroupShape shapeNotesTgt = notesSrc.getCSld().getSpTree();
-            updateSlide(shapeNotesTgt, newParagraphs);
+            dependencyInjection.updateSlide(shapeNotesTgt, newParagraphs);
         }
     }
 
-    static void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
+    void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
         if(shapeNotesSrc == null) {
             throw new CopyCommentException("ShapeNotesSrc is null");
         }
@@ -45,22 +61,31 @@ class SlideUpdator {
                 if (txBody != null) {
                     List<CTTextParagraph> paragraphs = txBody.getP();
                     //New paragraphs must have these properties. They are copied from the first one
-                    CTTextParagraph referenceParagraph = paragraphs.get(0);
-                    CTTextParagraphProperties paragraphProperties = referenceParagraph.getPPr();
-                    CTTextCharacterProperties characterProperties = referenceParagraph.getEndParaRPr();
+                    CTTextParagraph referenceCTTextParagraph = paragraphs.get(0);
                     //Clear and replace
                     paragraphs.clear();
-                    for(String p : newParagraphs) {
-                        CTTextParagraph newParagraph = new CTTextParagraph();
-                        newParagraph.setPPr(paragraphProperties);
-                        newParagraph.setEndParaRPr(characterProperties);
-                        CTRegularTextRun tr = new CTRegularTextRun();
-                        tr.setT(p);
-                        newParagraph.getEGTextRun().add(tr);
-                        paragraphs.add(newParagraph);
-                    }
+                    paragraphs.addAll(
+                        dependencyInjection.createNewCTTextParagraphs(newParagraphs, referenceCTTextParagraph)
+                    );
                 }
             }
         }
+    }
+
+    List<CTTextParagraph> createNewCTTextParagraphs(final List<String> newParagraphs, final CTTextParagraph referenceParagraph) {
+        List<CTTextParagraph> result = new ArrayList<>();
+
+        CTTextParagraphProperties paragraphProperties = referenceParagraph.getPPr();
+        CTTextCharacterProperties characterProperties = referenceParagraph.getEndParaRPr();
+        for(String p : newParagraphs) {
+            CTTextParagraph newParagraph = new CTTextParagraph();
+            newParagraph.setPPr(paragraphProperties);
+            newParagraph.setEndParaRPr(characterProperties);
+            CTRegularTextRun tr = new CTRegularTextRun();
+            tr.setT(p);
+            newParagraph.getEGTextRun().add(tr);
+            result.add(newParagraph);
+        }
+        return result;
     }
 }

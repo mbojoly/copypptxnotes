@@ -1,22 +1,14 @@
 package com.octo.mbo;
 
+@SuppressWarnings("ALL")
 public class CopyCommentException extends Exception {
-    public CopyCommentException() {
-    }
 
-    public CopyCommentException(String message) {
+    CopyCommentException(String message) {
         super(message);
     }
 
-    public CopyCommentException(String message, Throwable cause) {
-        super(message, cause);
+    CopyCommentException(String message, Throwable t) {
+        super(message, t);
     }
 
-    public CopyCommentException(Throwable cause) {
-        super(cause);
-    }
-
-    public CopyCommentException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
 }

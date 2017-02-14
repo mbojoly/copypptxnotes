@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2017 mbojoly (mbojoly@octo.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,13 @@
  */
 package com.octo.mbo;
 
+import com.octo.mbo.exceptions.CopyCommentException;
+import com.octo.mbo.extractor.SlideExtractor;
+import com.octo.mbo.extractor.SlideExtractorFactory;
+import com.octo.mbo.updator.SlideUpdator;
+import com.octo.mbo.xml.JAXBMarshaller;
+import com.octo.mbo.xml.Slide;
+import com.octo.mbo.xml.SlideDocument;
 import org.apache.commons.cli.*;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.OpcPackage;
@@ -32,14 +39,14 @@ import java.nio.file.Paths;
 import java.util.*;
 
 
-public class CopyComment {
+public class CopyNotes {
 
-    private static Logger log = LoggerFactory.getLogger(CopyComment.class);
+    private static Logger log = LoggerFactory.getLogger(CopyNotes.class);
 
     private final SlideUpdator slideUpdatorInjected;
     private SlideExtractorFactory srcSlideExtractorFactoryInjected;
 
-    CopyComment() {
+    CopyNotes() {
         slideUpdatorInjected = new SlideUpdator();
         srcSlideExtractorFactoryInjected = new SlideExtractorFactory();
     }
@@ -49,14 +56,14 @@ public class CopyComment {
      * @param slideUpdatorInjected dependencyInjection
      * @param srcSlideExtractorFactory dependencyInjection
      */
-    CopyComment(SlideUpdator slideUpdatorInjected, SlideExtractorFactory srcSlideExtractorFactory) {
+    CopyNotes(SlideUpdator slideUpdatorInjected, SlideExtractorFactory srcSlideExtractorFactory) {
         this.slideUpdatorInjected = slideUpdatorInjected;
         this.srcSlideExtractorFactoryInjected = srcSlideExtractorFactory;
     }
 
 
     public static void main(String[] args) throws JAXBException, IOException {
-        CopyComment copyComment = new CopyComment();
+        CopyNotes copyNotes = new CopyNotes();
 
         try {
             CommandLine cli = parseCommandLine(args);
@@ -68,7 +75,7 @@ public class CopyComment {
             final Map<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
 
             log.info("Extracting comment from source file...");
-            SlideExtractor srcSlideExtractor = copyComment.extractNote(hmSrc);
+            SlideExtractor srcSlideExtractor = copyNotes.extractNote(hmSrc);
 
             final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
             final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
@@ -76,14 +83,14 @@ public class CopyComment {
             Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
 
             log.info("Extracting comment from target file...");
-            SlideExtractor tgtSlideExtractor = copyComment.extractNote(hmTgt);
+            SlideExtractor tgtSlideExtractor = copyNotes.extractNote(hmTgt);
 
             Map<String, Slide> tgtSlides = tgtSlideExtractor.getSlides();
 
             checkMapSizesAreEqual(srcSlides, tgtSlides);
 
             log.info("Merging source and target slides");
-            Map<String, Slide> slidesPerPartName = copyComment.mergeSlides(targetFilePath, srcSlides, tgtSlides);
+            Map<String, Slide> slidesPerPartName = copyNotes.mergeSlides(targetFilePath, srcSlides, tgtSlides);
 
             SlideDocument slideDocument = new SlideDocument();
             slideDocument.getSlides().addAll(slidesPerPartName.values());
@@ -91,7 +98,7 @@ public class CopyComment {
             Files.write(Paths.get(targetFilePath + ".xml"), xml.getBytes());
 
             log.info("Updating target...");
-            copyComment.updatePptxStructure(hmTgt, slidesPerPartName);
+            copyNotes.updatePptxStructure(hmTgt, slidesPerPartName);
             log.info("Target updated.");
 
             log.info("Saving modified target...");
@@ -187,12 +194,12 @@ public class CopyComment {
         Set<String> processedKeys = new HashSet<>();
 
         Map<String, Slide> slidesPerPartName = new HashMap<>();
-        for(Map.Entry<String, Slide> e : tgtSlides.entrySet()) {
-            if(!srcSlides.containsKey(e.getKey())) {
+        for (Map.Entry<String, Slide> e : tgtSlides.entrySet()) {
+            if (!srcSlides.containsKey(e.getKey())) {
                 log.warn("No slide with key {} in the source document. This slide has been ignored.", e.getKey());
             } else {
                 Slide srcSlide = srcSlides.get(e.getKey());
-                if(srcSlide == null || srcSlide.getParagraphs() == null) {
+                if (srcSlide == null || srcSlide.getParagraphs() == null) {
                     log.error("Slide data are null. Slide {} has been ignored.", e.getKey());
                 } else {
                     processedKeys.add(e.getKey());
@@ -208,8 +215,8 @@ public class CopyComment {
         }
 
         //Check if some source slides are missing
-        for(String s : srcSlides.keySet()) {
-            if(!processedKeys.contains(s)) {
+        for (String s : srcSlides.keySet()) {
+            if (!processedKeys.contains(s)) {
                 log.warn("No slide with first string {} has been found in the target document. The corresponding comments are not copied", s);
             }
         }
@@ -219,7 +226,7 @@ public class CopyComment {
     void updatePptxStructure(Map<PartName, Part> hmTgt, Map<String, Slide> slidesPerPartName) throws Docx4JException, CopyCommentException {
         for (HashMap.Entry<PartName, Part> hmeTgt : hmTgt.entrySet()) {
             String partName = hmeTgt.getKey().getName();
-            if(slidesPerPartName.containsKey(partName)) {
+            if (slidesPerPartName.containsKey(partName)) {
                 slideUpdatorInjected.processEntry(hmeTgt.getValue(), slidesPerPartName.get(partName).getParagraphs());
             }
         }

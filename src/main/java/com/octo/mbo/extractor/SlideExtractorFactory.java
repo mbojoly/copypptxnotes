@@ -1,8 +1,8 @@
-package com.octo.mbo;
+package com.octo.mbo.extractor;
 
 
 public class SlideExtractorFactory {
-    SlideExtractor build() {
+    public SlideExtractor build() {
         return new SlideExtractor();
     }
 }

@@ -128,7 +128,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.octo.mbo.CopyComment</mainClass>
+                            <mainClass>com.octo.mbo.CopyNotes</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

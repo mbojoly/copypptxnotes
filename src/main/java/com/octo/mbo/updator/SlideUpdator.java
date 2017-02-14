@@ -1,21 +1,22 @@
 /**
  * Copyright (C) 2017 mbojoly (mbojoly@octo.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo;
+package com.octo.mbo.updator;
 
 
+import com.octo.mbo.exceptions.CopyCommentException;
 import org.docx4j.dml.*;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.parts.Part;
@@ -27,11 +28,11 @@ import org.pptx4j.pml.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
-class SlideUpdator {
+public class SlideUpdator {
 
     private final SlideUpdator dependencyInjection;
 
-    SlideUpdator() {
+    public SlideUpdator() {
         dependencyInjection = this;
     }
 
@@ -44,29 +45,33 @@ class SlideUpdator {
         this.dependencyInjection = dependencyInjection;
     }
 
-    void processEntry(Part part, List<String> newParagraphs) throws Docx4JException, CopyCommentException {
-        if(newParagraphs == null) {
+    public void processEntry(Part part, List<String> newParagraphs) throws CopyCommentException {
+        if (newParagraphs == null) {
             throw new CopyCommentException("List of newParagraphs to update is null");
         }
-        if(part != null && part instanceof SlidePart) {
-            SlidePart slidePart = (SlidePart) part;
-            if (slidePart.getNotesSlidePart() == null || slidePart.getNotesSlidePart().getContents() == null) {
-                throw new CopyCommentException("Processing of documents without an existing NoteSlidePart with content is not yet implemented");
+        try {
+            if (part != null && part instanceof SlidePart) {
+                SlidePart slidePart = (SlidePart) part;
+                if (slidePart.getNotesSlidePart() == null || slidePart.getNotesSlidePart().getContents() == null) {
+                    throw new CopyCommentException("Processing of documents without an existing NoteSlidePart with content is not yet implemented");
+                }
+                Notes notesSrc = slidePart.getNotesSlidePart().getContents();
+                if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {
+                    throw new CopyCommentException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented");
+                }
+                GroupShape shapeNotesTgt = notesSrc.getCSld().getSpTree();
+                dependencyInjection.updateSlide(shapeNotesTgt, newParagraphs);
             }
-            Notes notesSrc = slidePart.getNotesSlidePart().getContents();
-            if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {
-                throw new CopyCommentException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented");
-            }
-            GroupShape shapeNotesTgt = notesSrc.getCSld().getSpTree();
-            dependencyInjection.updateSlide(shapeNotesTgt, newParagraphs);
+        } catch (Docx4JException docx4jex) {
+            throw new CopyCommentException("Unable to get slide contents", docx4jex);
         }
     }
 
     void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
-        if(shapeNotesSrc == null) {
+        if (shapeNotesSrc == null) {
             throw new CopyCommentException("ShapeNotesSrc is null");
         }
-        if(newParagraphs == null) {
+        if (newParagraphs == null) {
             throw new CopyCommentException("List of newParagraphs to update is null");
         }
 
@@ -80,7 +85,7 @@ class SlideUpdator {
                     //Clear and replace, merge of previous and new comment is done by CopyComment.mergeSlides()
                     paragraphs.clear();
                     paragraphs.addAll(
-                        dependencyInjection.createNewCTTextParagraphs(newParagraphs, referenceCTTextParagraph)
+                            dependencyInjection.createNewCTTextParagraphs(newParagraphs, referenceCTTextParagraph)
                     );
                 }
             }
@@ -92,7 +97,7 @@ class SlideUpdator {
 
         CTTextParagraphProperties paragraphProperties = referenceParagraph.getPPr();
         CTTextCharacterProperties characterProperties = referenceParagraph.getEndParaRPr();
-        for(String p : newParagraphs) {
+        for (String p : newParagraphs) {
             CTTextParagraph newParagraph = new CTTextParagraph();
             newParagraph.setPPr(paragraphProperties);
             newParagraph.setEndParaRPr(characterProperties);

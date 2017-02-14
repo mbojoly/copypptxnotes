@@ -1,20 +1,22 @@
 /**
  * Copyright (C) 2017 mbojoly (mbojoly@octo.com)
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo;
+package com.octo.mbo.extractor;
 
+import com.octo.mbo.exceptions.CopyCommentException;
+import com.octo.mbo.xml.Slide;
 import org.docx4j.dml.CTRegularTextRun;
 import org.docx4j.dml.CTTextBody;
 import org.docx4j.dml.CTTextParagraph;
@@ -30,16 +32,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-class SlideExtractor {
+public class SlideExtractor {
 
     private static Logger log = LoggerFactory.getLogger(SlideExtractor.class);
     private final Map<String, Slide> slides = new HashMap<>();
 
-    Map<String, Slide> getSlides() {
+    public Map<String, Slide> getSlides() {
         return Collections.unmodifiableMap(slides);
     }
 
-    void processNoteEntry(Map.Entry<PartName, Part> hme) throws CopyCommentException, Docx4JException {
+    public void processNoteEntry(Map.Entry<PartName, Part> hme) throws CopyCommentException {
         if (hme == null) {
             throw new CopyCommentException("HashMap entry of a document part is null");
         }
@@ -48,37 +50,46 @@ class SlideExtractor {
             throw new CopyCommentException("Key of HashMap entry of a document part is null");
         }
 
-        Part partSrc = hme.getValue();
+        try {
 
-        if (partSrc != null && partSrc instanceof SlidePart) {
-            SlidePart slideSrc = (SlidePart) partSrc;
+            Part partSrc = hme.getValue();
 
-            Optional<String> optFirstString = extractFirstString(slideSrc);
+            if (partSrc != null && partSrc instanceof SlidePart) {
+                SlidePart slideSrc = (SlidePart) partSrc;
 
-            if(!optFirstString.isPresent()) {
-                log.warn("Slide {} has no first string in the layout. This slide has been ignored.", tgtPartName);
+                Optional<String> optFirstString = extractFirstString(slideSrc);
+
+                if (!optFirstString.isPresent()) {
+                    log.warn("Slide {} has no first string in the layout. This slide has been ignored.", tgtPartName);
+                } else {
+                    final String firstString = optFirstString.get();
+                    log.debug("First String of {} is {}", tgtPartName, firstString);
+                    addToListOfSlides(tgtPartName, slideSrc, firstString);
+                }
             }
-            else  {
-                final String firstString = optFirstString.get();
+        } catch (Docx4JException docx4jEx) {
+            throw new CopyCommentException("Error extracting comments, {}", docx4jEx);
+        }
+    }
 
-                log.debug("First String of {} is {}", tgtPartName, firstString);
+    private void addToListOfSlides(PartName tgtPartName, SlidePart slideSrc, String firstString) throws Docx4JException {
+        List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
 
-                List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
+        logParagraphs(notesParagraphs);
 
-                if(log.isTraceEnabled()) {
-                    log.trace("List of notes paragraph");
-                    for (String s : notesParagraphs) {
-                        log.trace(s);
-                    }
-                }
+        Slide s = new Slide(tgtPartName.getName(), firstString, notesParagraphs);
 
-                Slide s = new Slide(tgtPartName.getName(), firstString, notesParagraphs);
+        Slide alreadyExist = slides.putIfAbsent(firstString, s);
+        if (alreadyExist != null) {
+            log.warn("The slide {} is already associated with the key {} ", alreadyExist.getPartName(), firstString);
+        }
+    }
 
-                Slide alreadyExist = slides.putIfAbsent(firstString, s);
-                if(alreadyExist != null) {
-                    log.warn("The slide {} is already associated with the key {} ", alreadyExist.getPartName(), firstString);
-                }
-
+    private void logParagraphs(List<String> notesParagraphs) {
+        if (log.isTraceEnabled()) {
+            log.trace("List of notes paragraph");
+            for (String s : notesParagraphs) {
+                log.trace(s);
             }
         }
     }
@@ -137,13 +148,13 @@ class SlideExtractor {
     }
 
     Optional<String> extractFirstString(SlidePart slide) throws CopyCommentException {
-        if(slide == null || slide.getResolvedLayout() == null || slide.getResolvedLayout().getShapeTree() == null) {
+        if (slide == null || slide.getResolvedLayout() == null || slide.getResolvedLayout().getShapeTree() == null) {
             throw new CopyCommentException("A part of the shape tree of the slide is null");
         }
 
         Appender<String, Optional<String>> firstOneExtractor = new FirstStringAppender();
 
-        doOnEachParagraph(slide.getResolvedLayout().getShapeTree() , firstOneExtractor);
+        doOnEachParagraph(slide.getResolvedLayout().getShapeTree(), firstOneExtractor);
 
         return firstOneExtractor.getContent();
     }
@@ -153,12 +164,12 @@ class SlideExtractor {
 
         @Override
         public Optional<String> getContent() {
-            return firstString == null ? Optional.empty() : Optional.of(firstString) ;
+            return firstString == null ? Optional.empty() : Optional.of(firstString);
         }
 
         @Override
         public void accept(String s) {
-            if(firstString == null) {
+            if (firstString == null) {
                 firstString = s;
             }
         }

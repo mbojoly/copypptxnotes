@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo;
+package com.octo.mbo.xml;
 
+
+import com.octo.mbo.exceptions.CopyCommentException;
 
 import javax.xml.bind.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-class JAXBMarshaller {
+public class JAXBMarshaller {
     private JAXBMarshaller() {
         //Prevent to instanciate
     }
 
-    static String marshall( Object jaxbObject ) throws CopyCommentException {
+    public static String marshall( Object jaxbObject ) throws CopyCommentException {
         if(jaxbObject == null) {
             throw new CopyCommentException("The argument is null");
         }
@@ -46,7 +48,7 @@ class JAXBMarshaller {
         }
     }
 
-    static Object unmarshall(Class targetClass, String xml) throws CopyCommentException {
+    public static Object unmarshall(Class targetClass, String xml) throws CopyCommentException {
         if(targetClass == null || xml == null) {
             throw new CopyCommentException("One of the argument is null");
         }

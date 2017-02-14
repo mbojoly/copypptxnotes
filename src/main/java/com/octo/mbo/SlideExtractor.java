@@ -39,7 +39,7 @@ class SlideExtractor {
         return Collections.unmodifiableMap(slides);
     }
 
-    void processEntry(Map.Entry<PartName, Part> hme) throws CopyCommentException, Docx4JException {
+    void processNoteEntry(Map.Entry<PartName, Part> hme) throws CopyCommentException, Docx4JException {
         if (hme == null) {
             throw new CopyCommentException("HashMap entry of a document part is null");
         }
@@ -61,14 +61,15 @@ class SlideExtractor {
             else  {
                 final String firstString = optFirstString.get();
 
-
                 log.debug("First String of {} is {}", tgtPartName, firstString);
 
                 List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
 
-                log.debug("List of notes paragraph");
-                for(String s : notesParagraphs) {
-                    log.debug(s);
+                if(log.isTraceEnabled()) {
+                    log.trace("List of notes paragraph");
+                    for (String s : notesParagraphs) {
+                        log.trace(s);
+                    }
                 }
 
                 Slide s = new Slide(tgtPartName.getName(), firstString, notesParagraphs);
@@ -130,7 +131,6 @@ class SlideExtractor {
         if (otr != null && otr instanceof CTRegularTextRun) {
             CTRegularTextRun tr = (CTRegularTextRun) otr;
             final String txt = tr.getT();
-            log.trace("Reading {}", txt);
             builder.append(txt);
         }
         return builder;

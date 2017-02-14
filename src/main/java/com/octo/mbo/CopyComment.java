@@ -37,21 +37,21 @@ public class CopyComment {
     private static Logger log = LoggerFactory.getLogger(CopyComment.class);
 
     private final SlideUpdator slideUpdatorInjected;
-    private SlideExtractor srcSlideExtractorInjected;
+    private SlideExtractorFactory srcSlideExtractorFactoryInjected;
 
     CopyComment() {
         slideUpdatorInjected = new SlideUpdator();
-        srcSlideExtractorInjected = new SlideExtractor();
+        srcSlideExtractorFactoryInjected = new SlideExtractorFactory();
     }
 
     /**
      * For testing only
      * @param slideUpdatorInjected dependencyInjection
-     * @param srcSlideExtractorInjected dependencyInjection
+     * @param srcSlideExtractorFactory dependencyInjection
      */
-    CopyComment(SlideUpdator slideUpdatorInjected, SlideExtractor srcSlideExtractorInjected) {
+    CopyComment(SlideUpdator slideUpdatorInjected, SlideExtractorFactory srcSlideExtractorFactory) {
         this.slideUpdatorInjected = slideUpdatorInjected;
-        this.srcSlideExtractorInjected = srcSlideExtractorInjected;
+        this.srcSlideExtractorFactoryInjected = srcSlideExtractorFactory;
     }
 
 
@@ -64,12 +64,11 @@ public class CopyComment {
             final String srcFilePath = cli.getOptionValue("s");
             final String targetFilePath = cli.getOptionValue("t");
 
-
             final PresentationMLPackage pMLpkgSrc = loadPackage(srcFilePath);
             final Map<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
 
             log.info("Extracting comment from source file...");
-            SlideExtractor srcSlideExtractor = copyComment.extractComment(hmSrc);
+            SlideExtractor srcSlideExtractor = copyComment.extractNote(hmSrc);
 
             final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
             final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
@@ -77,7 +76,7 @@ public class CopyComment {
             Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
 
             log.info("Extracting comment from target file...");
-            SlideExtractor tgtSlideExtractor = copyComment.extractComment(hmTgt);
+            SlideExtractor tgtSlideExtractor = copyComment.extractNote(hmTgt);
 
             Map<String, Slide> tgtSlides = tgtSlideExtractor.getSlides();
 
@@ -101,6 +100,7 @@ public class CopyComment {
             pMLpkgTgt.save(new java.io.File(targetFilePath));
 
             log.info("done .. {} saved ", targetFilePath);
+
         } catch (MissingOptionException mex) {
             log.error(mex.getMessage());
             log.debug("Error parsing command line {}", mex);
@@ -174,11 +174,13 @@ public class CopyComment {
         log.debug("Map of documents parts have the same size {} for src, {} for target", srcSize, tgtSize);
     }
 
-    SlideExtractor extractComment(Map<PartName, Part> hmSrc) throws CopyCommentException, Docx4JException {
-        for (Map.Entry<PartName, Part> hmeSrc : hmSrc.entrySet()) {
-            srcSlideExtractorInjected.processEntry(hmeSrc);
+    SlideExtractor extractNote(Map<PartName, Part> hm) throws CopyCommentException, Docx4JException {
+        SlideExtractor slideExtractor = srcSlideExtractorFactoryInjected.build();
+        for (Map.Entry<PartName, Part> hme : hm.entrySet()) {
+            log.trace("ExtractComment from PartName {}", hme.getKey().getName());
+            slideExtractor.processNoteEntry(hme);
         }
-        return srcSlideExtractorInjected;
+        return slideExtractor;
     }
 
     Map<String, Slide> mergeSlides(String targetFilePath, Map<String, Slide> srcSlides, Map<String, Slide> tgtSlides) {

@@ -77,7 +77,7 @@ class SlideUpdator {
                     List<CTTextParagraph> paragraphs = txBody.getP();
                     //New paragraphs must have these properties. They are copied from the first one
                     CTTextParagraph referenceCTTextParagraph = paragraphs.get(0);
-                    //Clear and replace
+                    //Clear and replace, merge of previous and new comment is done by CopyComment.mergeSlides()
                     paragraphs.clear();
                     paragraphs.addAll(
                         dependencyInjection.createNewCTTextParagraphs(newParagraphs, referenceCTTextParagraph)

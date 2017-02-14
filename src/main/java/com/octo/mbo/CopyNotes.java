@@ -20,19 +20,19 @@ import com.octo.mbo.extractor.SlideExtractor;
 import com.octo.mbo.extractor.SlideExtractorFactory;
 import com.octo.mbo.updator.SlideUpdator;
 import com.octo.mbo.xml.JAXBMarshaller;
+import com.octo.mbo.xml.Pptx4jPackage;
 import com.octo.mbo.xml.Slide;
 import com.octo.mbo.xml.SlideDocument;
 import org.apache.commons.cli.*;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
-import org.docx4j.openpackaging.packages.OpcPackage;
-import org.docx4j.openpackaging.packages.PresentationMLPackage;
 import org.docx4j.openpackaging.parts.Part;
 import org.docx4j.openpackaging.parts.PartName;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.JAXBException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -70,15 +70,19 @@ public class CopyNotes {
 
             final String srcFilePath = cli.getOptionValue("s");
             final String targetFilePath = cli.getOptionValue("t");
-
-            final PresentationMLPackage pMLpkgSrc = loadPackage(srcFilePath);
-            final Map<PartName, Part> hmSrc = loadPptxPartMap(pMLpkgSrc);
+            
+            log.info("Loading. {}..", srcFilePath);
+            final Pptx4jPackage srcPackage = Pptx4jPackage.loadPackage(new FileInputStream(srcFilePath));
+            log.info("{} loaded", srcFilePath);
+            final Map<PartName, Part> hmSrc = srcPackage.loadPptxPartMap();
 
             log.info("Extracting comment from source file...");
             SlideExtractor srcSlideExtractor = copyNotes.extractNote(hmSrc);
 
-            final PresentationMLPackage pMLpkgTgt = loadPackage(targetFilePath);
-            final Map<PartName, Part> hmTgt = loadPptxPartMap(pMLpkgTgt);
+            log.info("Loading. {}..", targetFilePath);
+            final Pptx4jPackage targetPackage = Pptx4jPackage.loadPackage(new FileInputStream(targetFilePath));
+            log.info("{} loaded", targetFilePath);
+            final Map<PartName, Part> hmTgt = targetPackage.loadPptxPartMap();
 
             Map<String, Slide> srcSlides = srcSlideExtractor.getSlides();
 
@@ -104,7 +108,7 @@ public class CopyNotes {
             log.info("Saving modified target...");
 
             // All done: save it
-            pMLpkgTgt.save(new java.io.File(targetFilePath));
+            targetPackage.saveChanges(new FileOutputStream(targetFilePath));
 
             log.info("done .. {} saved ", targetFilePath);
 
@@ -140,35 +144,6 @@ public class CopyNotes {
 
         CommandLineParser cliParser = new DefaultParser();
         return cliParser.parse(options, args);
-    }
-
-    private static PresentationMLPackage loadPackage(final String srcFilePath) throws Docx4JException {
-
-        log.info("Loading. {}..", srcFilePath);
-        PresentationMLPackage pMLpkgSrc =
-                (PresentationMLPackage) OpcPackage.load(new java.io.File(srcFilePath));
-        log.info("{} loaded", srcFilePath);
-        return pMLpkgSrc;
-
-    }
-
-    /**
-     * In the 3.3.1 version of docx4j this exception can never be thrown (but it is not documented)
-     *
-     * @param pMLpkg Package
-     * @throws CopyCommentException If elements of package are null
-     */
-    private static void checkPackageNullElements(PresentationMLPackage pMLpkg) throws CopyCommentException {
-        if (pMLpkg == null ||
-                pMLpkg.getParts() == null ||
-                pMLpkg.getParts().getParts() == null) {
-            throw new CopyCommentException("Source document tree has a null element. Exiting");
-        }
-    }
-
-    static Map<PartName, Part> loadPptxPartMap(PresentationMLPackage pMLpkgSrc) throws Docx4JException, CopyCommentException {
-        checkPackageNullElements(pMLpkgSrc);
-        return pMLpkgSrc.getParts().getParts();
     }
 
     static void checkMapSizesAreEqual(Map<String, Slide> hmSrc, Map<String, Slide> hmTgt) throws CopyCommentException {

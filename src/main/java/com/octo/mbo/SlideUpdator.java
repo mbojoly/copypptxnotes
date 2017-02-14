@@ -55,7 +55,7 @@ class SlideUpdator {
             }
             Notes notesSrc = slidePart.getNotesSlidePart().getContents();
             if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {
-                throw new CopyCommentException("Processing of documents without a valide SPTree of NoteSlidePart is not yet implemented");
+                throw new CopyCommentException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented");
             }
             GroupShape shapeNotesTgt = notesSrc.getCSld().getSpTree();
             dependencyInjection.updateSlide(shapeNotesTgt, newParagraphs);

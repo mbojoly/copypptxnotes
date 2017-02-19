@@ -3,7 +3,7 @@ package com.octo.mbo;
 import com.octo.mbo.data.UpdatablePackage;
 import com.octo.mbo.data.XmlPackageFactory;
 import com.octo.mbo.data.XmlUpdatablePackage;
-import com.octo.mbo.data.updater.Function;
+import com.octo.mbo.io.Function;
 import com.octo.mbo.data.updater.SlideUpdator;
 import com.octo.mbo.domain.Merger;
 import com.octo.mbo.domain.Slide;

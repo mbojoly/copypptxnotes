@@ -1,4 +1,4 @@
-package com.octo.mbo.data.updater;
+package com.octo.mbo.io;
 
 import com.octo.mbo.exceptions.CopyNotesException;
 

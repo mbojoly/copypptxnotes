@@ -1,6 +1,5 @@
 package com.octo.mbo.io;
 
-import com.octo.mbo.data.updater.Function;
 import com.octo.mbo.exceptions.CopyNotesException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

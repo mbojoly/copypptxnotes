@@ -2,7 +2,7 @@ package com.octo.mbo;
 
 import com.octo.mbo.data.*;
 import com.octo.mbo.data.extracter.SlideExtractorFactory;
-import com.octo.mbo.data.updater.Function;
+import com.octo.mbo.io.Function;
 import com.octo.mbo.data.updater.SlideUpdator;
 import com.octo.mbo.exceptions.CopyNotesException;
 import com.octo.mbo.io.Util;

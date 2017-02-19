@@ -13,27 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo.xml;
+package com.octo.mbo.data.extracter;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
-import java.util.List;
 
-@XmlRootElement(name="slides")
-public class SlideDocument {
-    private final List<Slide> slides = new ArrayList<>();
-
-    public SlideDocument() {
-        //Required for JAXB
+public class SlideExtractorFactory {
+    public SlideExtractor build() {
+        return new SlideExtractor();
     }
-
-    public SlideDocument(List<Slide> slides) {
-        this.slides.addAll(slides);
-    }
-
-    @XmlElement(name="slide")
-    public List<Slide> getSlides() {
-        return slides;
-    }
- }
+}

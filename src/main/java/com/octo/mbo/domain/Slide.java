@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo.xml;
+package com.octo.mbo.domain;
 
 
 import javax.xml.bind.annotation.*;
@@ -22,7 +22,7 @@ import java.util.List;
 
 @SuppressWarnings("ALL")
 @XmlRootElement
-@XmlType(propOrder = { "title", "partName", "paragraphs"})
+@XmlType(propOrder = {"title", "partName", "paragraphs"})
 public class Slide {
 
     /**
@@ -45,18 +45,18 @@ public class Slide {
         this.paragraphs = paragraphs;
     }
 
-    @XmlElement(name="partName")
+    @XmlElement(name = "partName")
     public String getPartName() {
         return partName;
     }
 
-    @XmlElement(name="title")
+    @XmlElement(name = "title")
     public String getTitle() {
         return title;
     }
 
-    @XmlElementWrapper(name="notes")
-    @XmlElement(name="p")
+    @XmlElementWrapper(name = "notes")
+    @XmlElement(name = "p")
     public List<String> getParagraphs() {
         return paragraphs;
     }

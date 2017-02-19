@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo.updator;
+package com.octo.mbo.data.updater;
 
 
-import com.octo.mbo.exceptions.CopyCommentException;
+import com.octo.mbo.exceptions.CopyNotesException;
 import org.docx4j.dml.*;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.parts.Part;
@@ -45,34 +45,34 @@ public class SlideUpdator {
         this.dependencyInjection = dependencyInjection;
     }
 
-    public void processEntry(Part part, List<String> newParagraphs) throws CopyCommentException {
+    public void processEntry(Part part, List<String> newParagraphs) throws CopyNotesException {
         if (newParagraphs == null) {
-            throw new CopyCommentException("List of newParagraphs to update is null");
+            throw new CopyNotesException("List of newParagraphs to update is null");
         }
         try {
             if (part != null && part instanceof SlidePart) {
                 SlidePart slidePart = (SlidePart) part;
                 if (slidePart.getNotesSlidePart() == null || slidePart.getNotesSlidePart().getContents() == null) {
-                    throw new CopyCommentException("Processing of documents without an existing NoteSlidePart with content is not yet implemented");
+                    throw new CopyNotesException("Processing of documents without an existing NoteSlidePart with content is not yet implemented");
                 }
                 Notes notesSrc = slidePart.getNotesSlidePart().getContents();
                 if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {
-                    throw new CopyCommentException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented");
+                    throw new CopyNotesException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented");
                 }
                 GroupShape shapeNotesTgt = notesSrc.getCSld().getSpTree();
                 dependencyInjection.updateSlide(shapeNotesTgt, newParagraphs);
             }
         } catch (Docx4JException docx4jex) {
-            throw new CopyCommentException("Unable to get slide contents", docx4jex);
+            throw new CopyNotesException("Unable to get slide contents", docx4jex);
         }
     }
 
-    void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyCommentException {
+    void updateSlide(GroupShape shapeNotesSrc, List<String> newParagraphs) throws CopyNotesException {
         if (shapeNotesSrc == null) {
-            throw new CopyCommentException("ShapeNotesSrc is null");
+            throw new CopyNotesException("ShapeNotesSrc is null");
         }
         if (newParagraphs == null) {
-            throw new CopyCommentException("List of newParagraphs to update is null");
+            throw new CopyNotesException("List of newParagraphs to update is null");
         }
 
         for (Object o : shapeNotesSrc.getSpOrGrpSpOrGraphicFrame()) {
@@ -108,4 +108,6 @@ public class SlideUpdator {
         }
         return result;
     }
+
+
 }

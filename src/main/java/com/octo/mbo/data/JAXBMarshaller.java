@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo.xml;
+package com.octo.mbo.data;
 
 
-import com.octo.mbo.exceptions.CopyCommentException;
+import com.octo.mbo.exceptions.CopyNotesException;
 
 import javax.xml.bind.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public class JAXBMarshaller {
+class JAXBMarshaller {
     private JAXBMarshaller() {
         //Prevent to instanciate
     }
 
-    public static String marshall( Object jaxbObject ) throws CopyCommentException {
-        if(jaxbObject == null) {
-            throw new CopyCommentException("The argument is null");
+    static String marshall(Object jaxbObject) throws CopyNotesException {
+        if (jaxbObject == null) {
+            throw new CopyNotesException("The argument is null");
         }
 
         try {
@@ -42,15 +42,14 @@ public class JAXBMarshaller {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             marshaller.marshal(jaxbObject, baos);
             return baos.toString();
-        }
-        catch(JAXBException jaxbe) {
-            throw new CopyCommentException("Error marshalling the object", jaxbe);
+        } catch (JAXBException jaxbe) {
+            throw new CopyNotesException("Error marshalling the object", jaxbe);
         }
     }
 
-    public static Object unmarshall(Class targetClass, String xml) throws CopyCommentException {
-        if(targetClass == null || xml == null) {
-            throw new CopyCommentException("One of the argument is null");
+    static Object unmarshall(Class targetClass, String xml) throws CopyNotesException {
+        if (targetClass == null || xml == null) {
+            throw new CopyNotesException("One of the argument is null");
         }
 
         try {
@@ -60,9 +59,8 @@ public class JAXBMarshaller {
             unmarshaller.setEventHandler(new javax.xml.bind.helpers.DefaultValidationEventHandler());
             ByteArrayInputStream bais = new ByteArrayInputStream(xml.getBytes());
             return unmarshaller.unmarshal(bais);
-        }
-        catch(JAXBException jaxbe) {
-            throw new CopyCommentException("Error marshalling the object", jaxbe);
+        } catch (JAXBException jaxbe) {
+            throw new CopyNotesException("Error marshalling the object", jaxbe);
         }
     }
 }

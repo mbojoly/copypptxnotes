@@ -1,22 +1,22 @@
 /**
  * Copyright (C) 2017 mbojoly (mbojoly@octo.com)
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.octo.mbo.extractor;
+package com.octo.mbo.data.extracter;
 
-import com.octo.mbo.exceptions.CopyCommentException;
-import com.octo.mbo.xml.Slide;
+import com.octo.mbo.exceptions.CopyNotesException;
+import com.octo.mbo.domain.Slide;
 import org.docx4j.dml.CTRegularTextRun;
 import org.docx4j.dml.CTTextBody;
 import org.docx4j.dml.CTTextParagraph;
@@ -37,17 +37,23 @@ public class SlideExtractor {
     private static Logger log = LoggerFactory.getLogger(SlideExtractor.class);
     private final Map<String, Slide> slides = new HashMap<>();
 
+    /**
+     * Key: First string in the slide
+     * Value: Slide object
+     *
+     * @return Map
+     */
     public Map<String, Slide> getSlides() {
         return Collections.unmodifiableMap(slides);
     }
 
-    public void processNoteEntry(Map.Entry<PartName, Part> hme) throws CopyCommentException {
+    public void processNoteEntry(Map.Entry<PartName, Part> hme) throws CopyNotesException {
         if (hme == null) {
-            throw new CopyCommentException("HashMap entry of a document part is null");
+            throw new CopyNotesException("HashMap entry of a document part is null");
         }
         final PartName tgtPartName = hme.getKey();
         if (tgtPartName == null) {
-            throw new CopyCommentException("Key of HashMap entry of a document part is null");
+            throw new CopyNotesException("Key of HashMap entry of a document part is null");
         }
 
         try {
@@ -68,7 +74,7 @@ public class SlideExtractor {
                 }
             }
         } catch (Docx4JException docx4jEx) {
-            throw new CopyCommentException("Error extracting comments, {}", docx4jEx);
+            throw new CopyNotesException("Error extracting comments, {}", docx4jEx);
         }
     }
 
@@ -81,7 +87,10 @@ public class SlideExtractor {
 
         Slide alreadyExist = slides.putIfAbsent(firstString, s);
         if (alreadyExist != null) {
-            log.warn("The slide {} is already associated with the key {} ", alreadyExist.getPartName(), firstString);
+            log.warn("The slide {} is already associated with the key {}  and partName {}",
+                    s.getPartName(),
+                    firstString,
+                    alreadyExist.getPartName());
         }
     }
 
@@ -96,13 +105,17 @@ public class SlideExtractor {
 
     List<String> extractParagraphsOfComments(SlidePart partSrc) throws Docx4JException {
 
-        Notes notesSrc = partSrc.getNotesSlidePart().getContents();
-        GroupShape shapeNotesSrc = notesSrc.getCSld().getSpTree();
-        //Append each paragraph content in the list of paragraphs
-        Appender<String, List<String>> paragraphAppender = new ParagraphAppender();
+        List<String> result = new ArrayList<>();
+        if((partSrc != null) && (partSrc.getNotesSlidePart() != null)) {
+            Notes notesSrc = partSrc.getNotesSlidePart().getContents();
+            GroupShape shapeNotesSrc = notesSrc.getCSld().getSpTree();
+            //Append each paragraph content in the list of paragraphs
+            Appender<String, List<String>> paragraphAppender = new ParagraphAppender();
 
-        doOnEachParagraph(shapeNotesSrc, paragraphAppender);
-        return paragraphAppender.getContent();
+            doOnEachParagraph(shapeNotesSrc, paragraphAppender);
+            result = paragraphAppender.getContent();
+        }
+        return result;
     }
 
     <T> void doOnEachParagraph(GroupShape shapeNotesSrc, Appender<String, T> paragraphAppender) {
@@ -147,9 +160,9 @@ public class SlideExtractor {
         return builder;
     }
 
-    Optional<String> extractFirstString(SlidePart slide) throws CopyCommentException {
+    Optional<String> extractFirstString(SlidePart slide) throws CopyNotesException {
         if (slide == null || slide.getResolvedLayout() == null || slide.getResolvedLayout().getShapeTree() == null) {
-            throw new CopyCommentException("A part of the shape tree of the slide is null");
+            throw new CopyNotesException("A part of the shape tree of the slide is null");
         }
 
         Appender<String, Optional<String>> firstOneExtractor = new FirstStringAppender();

@@ -87,7 +87,6 @@ modules.xml
 hs_err_pid*
 
 # End of https://www.gitignore.io/api/java,maven,intellij+iml
-test/
 .idea/sonarlint/issuestore/1/
 .idea/sonarlint/issuestore/2/
 .idea/sonarlint/issuestore/3/

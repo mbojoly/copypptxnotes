@@ -22,8 +22,9 @@ Allowed target formats are xml for a new or existing file, pptx only for an exis
 
 Notes are extracted both from souce and target document. The first string of the slide is used as a key. When slides in the source and target document have the same first string they are considered as the same slide. Notes from the source slides are then added above the existing notes of the target slide's notes. Source and target notes are separated by such line `=== Original comments from <path of target document===`.
 
-Known limitation: If two slides in the document have the same first string, the second one is ignored and a warning is emitted on the console output.
-
+Known limitation:
+- If two slides in the document have the same first string, the second one is ignored and a warning is emitted on the console output.
+- If a slide has no string, its notes are ignored.
 
 
 

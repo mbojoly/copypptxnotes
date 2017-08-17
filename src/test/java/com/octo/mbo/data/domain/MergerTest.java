@@ -27,14 +27,24 @@ import java.util.*;
 
 public class MergerTest {
 
-    @Test(expected = CopyNotesException.class)
-    public void checkMapSizeAreEqualFailsIfNotEqual() throws InvalidFormatException, CopyNotesException {
+    @Test
+    public void checkMapSizeAreOkFailsIfSrcGreaterThanTarget() throws InvalidFormatException, CopyNotesException {
         Map<String, Slide> hmSrc = new HashMap<>();
         Map<String, Slide> hmTgt = new HashMap<>();
         hmSrc.put("Title", new Slide("/partname", "Title", Collections.singletonList("Paragraph 1")));
 
         Merger merger = new Merger();
-        merger.checkMapSizesAreEqual(hmSrc, hmTgt);
+        merger.checkMapSizesAreOk(hmSrc, hmTgt);
+    }
+
+    @Test
+    public void checkMapSizeAreOkFailsIfSrcSmallerThanTarget() throws InvalidFormatException, CopyNotesException {
+        Map<String, Slide> hmSrc = new HashMap<>();
+        Map<String, Slide> hmTgt = new HashMap<>();
+        hmTgt.put("Title", new Slide("/partname", "Title", Collections.singletonList("Paragraph 1")));
+
+        Merger merger = new Merger();
+        merger.checkMapSizesAreOk(hmSrc, hmTgt);
     }
 
     @Test

@@ -90,7 +90,7 @@ class Processor {
         }
 
         //Merge source slidess and target slides
-        mergerInjected.checkMapSizesAreEqual(srcSlides, tgtSlides);
+        mergerInjected.checkMapSizesAreOk(srcSlides, tgtSlides);
 
         log.info("Merging source and target slides");
         Map<String, Slide> slidesPerPartName = mergerInjected.mergeSlides(targetFilePath, srcSlides, tgtSlides);

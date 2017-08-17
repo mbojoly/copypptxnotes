@@ -23,14 +23,15 @@ import com.octo.mbo.exceptions.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
+import java.io.File;
+import java.nio.file.FileSystem;
 import java.util.Map;
 
 /**
  * Orchestrate different behaviour for PPTX and XML files according to the file extension
  * Prcessor implement it
  */
-public class Orchestrator {
+class Orchestrator {
     static final String SHOUD_NEVER_COMES_HERE_IN_THEORY_CHECKED_PREVIOUSLY;
 
     static {
@@ -47,31 +48,42 @@ public class Orchestrator {
         this.processorInjected = processor;
     }
 
-    public void run(String srcFilePath, String targetFilePath) throws CopyNotesException {
+    void run(String srcFilePath, String targetFilePath, FileSystem fileSystem) throws CopyNotesException {
         try {
             String srcExtension = getExtension(srcFilePath);
 
             String targetExtension = getExtension(targetFilePath);
 
-            java.nio.file.Path targetPath = Paths.get(targetFilePath);
-            boolean targetFileExists = targetPath.toFile().exists();
+            java.nio.file.Path targetPath = fileSystem.getPath(targetFilePath);
+            File f1 = targetPath.toFile();
+            boolean targetFileExists = f1.exists();
 
-            final Map<String, Slide> srcSlides;
-            if ("pptx".equals(srcExtension)) {
-                final Pptx4jPackage srcPackage = loaderInjected.loadPptx4ReadOnly(srcFilePath);
-                srcSlides = srcPackage.getSlides();
-            } else if ("xml".equals(srcExtension)) {
-                final XmlUpdatablePackage srcXmlUpdatablePackage = loaderInjected.loadXml(srcFilePath);
-                srcSlides = srcXmlUpdatablePackage.getSlides();
-            } else {
-                log.error(SHOUD_NEVER_COMES_HERE_IN_THEORY_CHECKED_PREVIOUSLY);
-                srcSlides = null;
+            java.nio.file.Path srcPath = fileSystem.getPath(srcFilePath);
+            File f2 = srcPath.toFile();
+            boolean srcFileExists = f2.exists();
+
+            if(srcFileExists) {
+
+                final Map<String, Slide> srcSlides;
+                if ("pptx".equals(srcExtension)) {
+                    final Pptx4jPackage srcPackage = loaderInjected.loadPptx4ReadOnly(srcFilePath);
+                    srcSlides = srcPackage.getSlides();
+                } else if ("xml".equals(srcExtension)) {
+                    final XmlUpdatablePackage srcXmlUpdatablePackage = loaderInjected.loadXml(srcFilePath);
+                    srcSlides = srcXmlUpdatablePackage.getSlides();
+                } else {
+                    log.error(SHOUD_NEVER_COMES_HERE_IN_THEORY_CHECKED_PREVIOUSLY);
+                    srcSlides = null;
+                }
+
+                if (targetFileExists) {
+                    processorInjected.processWithExistingTargetFile(targetFilePath, targetExtension, srcSlides);
+                } else {
+                    processorInjected.processWithANewTargetFile(targetFilePath, targetExtension, srcSlides);
+                }
             }
-
-            if (targetFileExists) {
-                processorInjected.processWithExistingTargetFile(targetFilePath, targetExtension, srcSlides);
-            } else {
-                processorInjected.processWithANewTargetFile(targetFilePath, targetExtension, srcSlides);
+            else {
+                log.error("Src file {} does not exists. EXITING.", srcFilePath);
             }
         } catch (NotImplementedException niex) {
             throw new CopyNotesException("Orchestrator error", niex);

@@ -23,7 +23,7 @@
 
     <groupId>com.octo.mbo</groupId>
     <artifactId>copypptxnotes</artifactId>
-    <version>0.3-alpha</version>
+    <version>0.4-alpha</version>
 
     <licenses>
         <license>
@@ -195,11 +195,6 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <limit implementation="org.jacoco.report.check.Limit">
-                                    <counter>INSTRUCTION</counter>
-                                    <value>COVEREDRATIO</value>
-                                    <minimum>0.80</minimum>
-                                </limit>
                             </rules>
                         </configuration>
                     </execution>

@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.JAXBException;
 import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 
 
 public class CopyNotes {
@@ -56,7 +58,7 @@ public class CopyNotes {
                     util
             );
             Orchestrator orchestrator = new Orchestrator(loader, processor);
-            orchestrator.run(srcFilePath, targetFilePath);
+            orchestrator.run(srcFilePath, targetFilePath, FileSystems.getDefault());
 
         } catch (CommandLineException clex) {
             log.debug("Error parsing the command line. Please use CopyComment --help", clex);

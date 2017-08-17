@@ -25,14 +25,19 @@ import java.util.*;
 public class Merger {
     private static Logger log = LoggerFactory.getLogger(Merger.class);
 
-    public void checkMapSizesAreEqual(Map<String, Slide> hmSrc, Map<String, Slide> hmTgt) throws CopyNotesException {
+    public void checkMapSizesAreOk(Map<String, Slide> hmSrc, Map<String, Slide> hmTgt) throws CopyNotesException {
         final int srcSize = hmSrc.size();
         final int tgtSize = hmTgt.size();
 
-        if (srcSize != tgtSize) {
-            throw new CopyNotesException(String.format("Source document has %s slides and target document %s.", srcSize, tgtSize));
+        if (srcSize > tgtSize) {
+            log.warn("Map of target documents parts have a smaller size {} than src, {}", srcSize, tgtSize);
         }
-        log.debug("Map of documents parts have the same size {} for src, {} for target", srcSize, tgtSize);
+        else if (srcSize == tgtSize) {
+            log.debug("Map of documents parts have the same size {} for src, {} for target", srcSize, tgtSize);
+        }
+        else {
+            log.debug("Map of target documents parts have a greater size {} for src, {} for target", srcSize, tgtSize);
+        }
     }
 
     public Map<String, Slide> mergeSlides(String targetFilePath, Map<String, Slide> srcSlides, Map<String, Slide> tgtSlides) {
@@ -41,7 +46,7 @@ public class Merger {
         Map<String, Slide> slidesPerPartName = new HashMap<>();
         for (Map.Entry<String, Slide> e : tgtSlides.entrySet()) {
             if (!srcSlides.containsKey(e.getKey())) {
-                log.warn("No slide with key {} in the source document. This slide has been ignored.", e.getKey());
+                log.warn("SRC slide missing. No slide with key \"{}\" in the source document. This slide has been ignored.", e.getKey());
             } else {
                 Slide srcSlide = srcSlides.get(e.getKey());
                 if (srcSlide == null || srcSlide.getParagraphs() == null) {
@@ -62,7 +67,7 @@ public class Merger {
         //Check if some source slides are missing
         for (String s : srcSlides.keySet()) {
             if (!processedKeys.contains(s)) {
-                log.warn("No slide with first string {} has been found in the target document. The corresponding comments are not copied", s);
+                log.warn("TARGET slide missing. No slide with first string \"{}\" has been found in the target document. The corresponding comments are not copied", s);
             }
         }
         return slidesPerPartName;

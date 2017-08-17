@@ -21,29 +21,32 @@ import com.octo.mbo.exceptions.CopyNotesException;
 import com.octo.mbo.exceptions.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.FileSystem;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Paths.class, Path.class, File.class})
 public class OrchestratorTest {
 
     @Test
     public void runTestWithNewTargetFileAndXmlSrcFile() throws CopyNotesException, NotImplementedException {
-        java.nio.file.Path pathMock = mock(java.nio.file.Path.class);
-        PowerMockito.mockStatic(Paths.class);
-        when(Paths.get(any())).thenReturn(pathMock);
+        File existsFileMock = mock(java.io.File.class);
+        when(existsFileMock.exists()).thenReturn(true);
+        java.nio.file.Path existsPathMock = new OrchestratorPathMock(existsFileMock);
+
+        File notExistsFileMock = mock(java.io.File.class);
+        when(notExistsFileMock.exists()).thenReturn(false);
+
+        java.nio.file.Path notExistsPathMock = new OrchestratorPathMock(notExistsFileMock);
+        FileSystem fileSystemMock = mock(FileSystem.class);
+
+        when(fileSystemMock.getPath("srcFilePath.xml")).thenReturn(existsPathMock);
+        when(fileSystemMock.getPath("targetFilePath.xml")).thenReturn(notExistsPathMock);
 
         Loader loaderMock = mock(Loader.class);
         XmlUpdatablePackage xmlUpdatablePackageMock = mock(XmlUpdatablePackage.class);
@@ -53,7 +56,7 @@ public class OrchestratorTest {
 
         Orchestrator orchestrator = new Orchestrator(loaderMock, processorMock);
 
-        orchestrator.run("srcFilePath.xml", "targetFilePath.xml");
+        orchestrator.run("srcFilePath.xml", "targetFilePath.xml", fileSystemMock);
 
         Mockito.verify(loaderMock).loadXml(any());
 
@@ -62,9 +65,17 @@ public class OrchestratorTest {
 
     @Test
     public void runTestWithNewTargetFileAndPptxSrcFile() throws CopyNotesException, NotImplementedException {
-        java.nio.file.Path pathMock = mock(java.nio.file.Path.class);
-        PowerMockito.mockStatic(Paths.class);
-        when(Paths.get(any())).thenReturn(pathMock);
+        File existsFileMock = mock(java.io.File.class);
+        when(existsFileMock.exists()).thenReturn(true);
+        java.nio.file.Path existsPathMock = new OrchestratorPathMock(existsFileMock);
+
+        File notExistsFileMock = mock(java.io.File.class);
+        when(notExistsFileMock.exists()).thenReturn(false);
+        java.nio.file.Path notExistsPathMock = new OrchestratorPathMock(notExistsFileMock);
+        FileSystem fileSystemMock = mock(FileSystem.class);
+
+        when(fileSystemMock.getPath("srcFilePath.pptx")).thenReturn(existsPathMock);
+        when(fileSystemMock.getPath("targetFilePath.xml")).thenReturn(notExistsPathMock);
 
         Loader loaderMock = mock(Loader.class);
         Pptx4jPackage pptx4jPackage = mock(Pptx4jPackage.class);
@@ -74,11 +85,35 @@ public class OrchestratorTest {
 
         Orchestrator orchestrator = new Orchestrator(loaderMock, processorMock);
 
-        orchestrator.run("srcFilePath.pptx", "targetFilePath.xml");
+        orchestrator.run("srcFilePath.pptx", "targetFilePath.xml", fileSystemMock);
 
         Mockito.verify(loaderMock).loadPptx4ReadOnly(any());
 
         Mockito.verify(processorMock).processWithANewTargetFile(any(), any(), any());
+    }
+
+    @Test
+    public void runTestWithoutSrcFile() throws CopyNotesException, NotImplementedException {
+        File notExistsFileMock = mock(java.io.File.class);
+        when(notExistsFileMock.exists()).thenReturn(false);
+        java.nio.file.Path notExistsPathMock = new OrchestratorPathMock(notExistsFileMock);
+
+        FileSystem fileSystemMock = mock(FileSystem.class);
+        when(fileSystemMock.getPath(anyString())).thenReturn(notExistsPathMock);
+
+        Loader loaderMock = mock(Loader.class);
+        Pptx4jPackage pptx4jPackage = mock(Pptx4jPackage.class);
+        when(loaderMock.loadPptx4ReadOnly(any())).thenReturn(pptx4jPackage);
+
+        Processor processorMock = mock(Processor.class);
+
+        Orchestrator orchestrator = new Orchestrator(loaderMock, processorMock);
+
+        orchestrator.run("dummyFilePath.pptx", "dummyFilePath.pptx", fileSystemMock);
+
+        Mockito.verifyZeroInteractions(loaderMock);
+
+        Mockito.verifyZeroInteractions(processorMock);
     }
 
 

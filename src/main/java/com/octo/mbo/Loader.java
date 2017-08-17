@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 class Loader {
     private static Logger log = LoggerFactory.getLogger(Loader.class);
@@ -55,6 +57,7 @@ class Loader {
     }
 
     Pptx4jPackage doloadPptx(SlideUpdator slideUpdator, String filePath) throws CopyNotesException {
+        assert filePath != null && !Files.exists(Paths.get(filePath));
         Function<InputStream, Pptx4jPackage> function = is -> {
             SlideExtractorFactory extractorFactory = new SlideExtractorFactory();
 

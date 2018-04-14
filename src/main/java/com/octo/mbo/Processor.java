@@ -89,7 +89,7 @@ class Processor {
             tgtSlides = null;
         }
 
-        //Merge source slidess and target slides
+        //Merge source slides and target slides
         mergerInjected.checkMapSizesAreOk(srcSlides, tgtSlides);
 
         log.info("Merging source and target slides");

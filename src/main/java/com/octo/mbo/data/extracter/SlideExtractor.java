@@ -31,11 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SlideExtractor {
 
     private static Logger log = LoggerFactory.getLogger(SlideExtractor.class);
-    private final Map<String, Slide> slides = new HashMap<>();
+    final Map<String, Slide> slides = new HashMap<>();
 
     /**
      * Key: First string in the slide
@@ -78,19 +80,58 @@ public class SlideExtractor {
         }
     }
 
-    private void addToListOfSlides(PartName tgtPartName, SlidePart slideSrc, String firstString) throws Docx4JException {
+    /**
+     * Add the slide by creating a key from the title (first string found) and
+     * if required the part name (identifier of the slide which contains the slide number)
+     * @param tgtPartName Identifier of the slide e.g. "/ppt/slides/slide4.xml"
+     * @param slideSrc : Content of the slide
+     * @param firstString : First String found in the slide structure. Expected to be the title
+     * @throws Docx4JException throw by the library
+     */
+    void addToListOfSlides(PartName tgtPartName, SlidePart slideSrc, String firstString) throws Docx4JException {
+        String nonNullFirstString = firstString == null ? "" : firstString;
         List<String> notesParagraphs = extractParagraphsOfComments(slideSrc);
-
         logParagraphs(notesParagraphs);
 
-        Slide s = new Slide(tgtPartName.getName(), firstString, notesParagraphs);
+        Slide s = new Slide(tgtPartName.getName(), nonNullFirstString, notesParagraphs);
 
-        Slide alreadyExist = slides.putIfAbsent(firstString, s);
+        Slide alreadyExist = slides.putIfAbsent(nonNullFirstString, s);
         if (alreadyExist != null) {
-            log.warn("The slide {} is already associated with the key {}  and partName {}",
-                    s.getPartName(),
-                    firstString,
-                    alreadyExist.getPartName());
+            String existingPartName = alreadyExist.getPartName();
+            String newPartName = s.getPartName();
+            Optional<Short> existingSlideIdx = extractSlideIdFromPartName(existingPartName);
+            Optional<Short> newSlideIdx = extractSlideIdFromPartName(newPartName);
+            if(existingSlideIdx.isPresent() && newSlideIdx.isPresent()) {
+                int delta = newSlideIdx.get() - existingSlideIdx.get();
+                nonNullFirstString = nonNullFirstString + "+" + delta;
+            } else {
+                nonNullFirstString = nonNullFirstString + "+" + newPartName;
+            }
+            Slide secondTryAlreadyExist = slides.putIfAbsent(nonNullFirstString, s);
+            if(secondTryAlreadyExist != null) {
+                log.warn("The slide '{}' is already associated with the key '{}' and partName '{}'",
+                        s.getPartName(),
+                        nonNullFirstString,
+                        secondTryAlreadyExist.getPartName());
+            } else {
+                log.info("The slide '{}' has been associated with the key '{}' because initial key " +
+                                "is already associated with partName '{}'",
+                        s.getPartName(),
+                        nonNullFirstString,
+                        alreadyExist.getPartName());
+            }
+        }
+    }
+
+    private static final Pattern p = Pattern.compile("^/ppt/slides/slide([0-9]+).xml");
+
+    private Optional<Short> extractSlideIdFromPartName(String partName) {
+        // create matcher for pattern p and given string
+        Matcher m = p.matcher(partName);
+        if(m.find()) {
+            return Optional.of(Short.parseShort(m.group(1)));
+        } else {
+            return Optional.empty();
         }
     }
 

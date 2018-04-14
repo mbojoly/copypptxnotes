@@ -16,6 +16,7 @@
 package com.octo.mbo.data.extracter;
 
 
+import com.octo.mbo.domain.Slide;
 import com.octo.mbo.exceptions.CopyNotesException;
 import org.docx4j.dml.CTRegularTextRun;
 import org.docx4j.dml.CTTextParagraph;
@@ -40,7 +41,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 
 //Warning : PowerMockito not compatible with JUnit5
 @RunWith(PowerMockRunner.class)
@@ -154,5 +158,45 @@ public class SlideExtracterTest {
         slideExtractor.processNoteEntry(partMap.entrySet().iterator().next());
         //verify(slideExtractor, times(1)).extractFirstString(any(SlidePart.class));
         verify(slideExtractor, times(1)).extractParagraphsOfComments(any(SlidePart.class));
+    }
+
+    @Test
+    public void addToListOfSlidesASlideWithSameFirstStringTest() throws Docx4JException {
+        //Given
+        SlideExtractor slideExtractor = PowerMockito.spy(new SlideExtractor());
+        Map<PartName, Part> partMap = new HashMap<>();
+
+        Slide slideMock = mock(Slide.class, RETURNS_DEEP_STUBS);
+        doReturn("/ppt/slides/slide4.xml").when(slideMock).getPartName();
+        String existingKey = "Title";
+        slideExtractor.slides.put(existingKey, slideMock);
+        when(slideExtractor.extractParagraphsOfComments(any(SlidePart.class))).thenReturn(new ArrayList<>());
+        PartName partNameMock = mock(PartName.class, RETURNS_DEEP_STUBS);
+        doReturn("/ppt/slides/slide6.xml").when(partNameMock).getName();
+        SlidePart slidePartMock = mock(SlidePart.class, RETURNS_DEEP_STUBS);
+        //When
+        slideExtractor.addToListOfSlides(partNameMock, slidePartMock, existingKey);
+        //Then
+        assertThat(slideExtractor.slides.keySet(), containsInAnyOrder(existingKey, existingKey + "+2"));
+    }
+
+    @Test
+    public void addToListOfSlidesASlideWithSameNullFirstStringTestAndUnexpectedPartName() throws Docx4JException {
+        //Given
+        SlideExtractor slideExtractor = PowerMockito.spy(new SlideExtractor());
+        Map<PartName, Part> partMap = new HashMap<>();
+
+        Slide slideMock = mock(Slide.class, RETURNS_DEEP_STUBS);
+        doReturn("foo").when(slideMock).getPartName();
+        String existingKey = null;
+        slideExtractor.slides.put(existingKey == null ? "" : existingKey, slideMock);
+        when(slideExtractor.extractParagraphsOfComments(any(SlidePart.class))).thenReturn(new ArrayList<>());
+        PartName partNameMock = mock(PartName.class, RETURNS_DEEP_STUBS);
+        doReturn("bar").when(partNameMock).getName();
+        SlidePart slidePartMock = mock(SlidePart.class, RETURNS_DEEP_STUBS);
+        //When
+        slideExtractor.addToListOfSlides(partNameMock, slidePartMock, existingKey);
+        //Then
+        assertThat(slideExtractor.slides.keySet(), containsInAnyOrder("", "+bar"));
     }
 }

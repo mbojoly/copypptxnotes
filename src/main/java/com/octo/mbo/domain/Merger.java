@@ -56,8 +56,8 @@ public class Merger {
                         srcSlides.keySet(), tgtSlides.keySet(), e.getKey());
                 {
                     if (bestKeyMatch.isPresent()) {
-                        log.info("Copying comments of SRC slide with key \"{}\" in TGT slide \"{}\"", bestKeyMatch, e.getKey());
                         final String srcKey = bestKeyMatch.get();
+                        log.info("Copying comments of SRC slide with key \"{}\" in TGT slide \"{}\"", srcKey, e.getKey());
                         final Slide srcSlide = srcSlides.get(srcKey);
                         final Slide tgtSlide = e.getValue();
                         copyCommentIfExists(srcKey, srcSlide, tgtSlide, targetFilePath, processedKeys);
@@ -68,12 +68,12 @@ public class Merger {
                 //Switch key from first string to partName
                 slidesPerPartName.put(e.getValue().getPartName(), e.getValue());
             }
+        }
 
-            //Check if some source slides are missing
-            for (String s : srcSlides.keySet()) {
-                if (!processedKeys.contains(s)) {
-                    log.warn("TARGET slide missing. No slide with key \"{}\" has been found in the target document. The corresponding comments are not copied", s);
-                }
+        //Check if some source slides are missing
+        for (String s : srcSlides.keySet()) {
+            if (!processedKeys.contains(s)) {
+                log.warn("TARGET slide missing. No slide with key \"{}\" has been found in the target document. The corresponding comments are not copied", s);
             }
         }
         return slidesPerPartName;

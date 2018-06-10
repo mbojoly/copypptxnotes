@@ -45,31 +45,50 @@ public class Merger {
 
         Map<String, Slide> slidesPerPartName = new HashMap<>();
         for (Map.Entry<String, Slide> e : tgtSlides.entrySet()) {
-            if (!srcSlides.containsKey(e.getKey())) {
-                log.warn("SRC slide missing. No slide with key \"{}\" in the source document. This slide has been ignored.", e.getKey());
+            ApproachingMatcher approachingMacher = new ApproachingMatcher();
+            if (srcSlides.containsKey(e.getKey())) {
+                final String srcKey = e.getKey();
+                final Slide srcSlide = srcSlides.get(srcKey);
+                final Slide tgtSlide = e.getValue();
+                copyCommentIfExists(srcKey, srcSlide, tgtSlide, targetFilePath, processedKeys);
             } else {
-                Slide srcSlide = srcSlides.get(e.getKey());
-                if (srcSlide == null || srcSlide.getParagraphs() == null) {
-                    log.error("Slide data are null. Slide {} has been ignored.", e.getKey());
-                } else {
-                    processedKeys.add(e.getKey());
-                    List<String> srcParagraphs = srcSlide.getParagraphs();
-                    List<String> tgtParagraphs = e.getValue().getParagraphs();
-                    //Preprend source comments (they are the reference)
-                    tgtParagraphs.add(0, "=== Original comments from " + targetFilePath + "===");
-                    tgtParagraphs.addAll(0, srcParagraphs);
+                Optional<String> bestKeyMatch = approachingMacher.findBestMatch(
+                        srcSlides.keySet(), tgtSlides.keySet(), e.getKey());
+                {
+                    if (bestKeyMatch.isPresent()) {
+                        log.info("Copying comments of SRC slide with key \"{}\" in TGT slide \"{}\"", bestKeyMatch, e.getKey());
+                        final String srcKey = bestKeyMatch.get();
+                        final Slide srcSlide = srcSlides.get(srcKey);
+                        final Slide tgtSlide = e.getValue();
+                        copyCommentIfExists(srcKey, srcSlide, tgtSlide, targetFilePath, processedKeys);
+                    } else {
+                        log.warn("SRC slide missing. No slide with key \"{}\" in the source document. This slide has been ignored.", e.getKey());
+                    }
                 }
+                //Switch key from first string to partName
+                slidesPerPartName.put(e.getValue().getPartName(), e.getValue());
             }
-            //Switch key  from first string to partName
-            slidesPerPartName.put(e.getValue().getPartName(), e.getValue());
-        }
 
-        //Check if some source slides are missing
-        for (String s : srcSlides.keySet()) {
-            if (!processedKeys.contains(s)) {
-                log.warn("TARGET slide missing. No slide with first string \"{}\" has been found in the target document. The corresponding comments are not copied", s);
+            //Check if some source slides are missing
+            for (String s : srcSlides.keySet()) {
+                if (!processedKeys.contains(s)) {
+                    log.warn("TARGET slide missing. No slide with key \"{}\" has been found in the target document. The corresponding comments are not copied", s);
+                }
             }
         }
         return slidesPerPartName;
+    }
+
+    private void copyCommentIfExists(String srcKey, Slide srcSlide, Slide tgtSlide, String targetFilePath, Set<String> processedKeys) {
+        if (srcSlide == null || srcSlide.getParagraphs() == null) {
+            log.error("Slide data are null. Slide {} has been ignored.", srcKey);
+        } else {
+            processedKeys.add(srcKey);
+            List<String> srcParagraphs = srcSlide.getParagraphs();
+            List<String> tgtParagraphs = tgtSlide.getParagraphs();
+            //Preprend source comments (they are the reference)
+            tgtParagraphs.add(0, "=== Original comments from " + targetFilePath + "===");
+            tgtParagraphs.addAll(0, srcParagraphs);
+        }
     }
 }

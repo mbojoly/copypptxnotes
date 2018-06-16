@@ -10,7 +10,7 @@
     </appender>
 
     <logger name="com.octo.mbo">
-        <level value="all"/>
+        <level value="INFO"/>
     </logger>
 
     <root>

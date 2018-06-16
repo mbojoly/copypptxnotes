@@ -24,6 +24,9 @@ import org.junit.Test;
 
 import java.util.*;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasEntry;
+
 
 public class MergerTest {
 
@@ -73,7 +76,7 @@ public class MergerTest {
         tgtSlides.put(slidesSrc.get(1).getTitle(), slidesTgt.get(1));
 
         Merger merger = new Merger();
-        merger.mergeSlides(targetFilePath, srcSlides, tgtSlides);
+        Map<String, Slide> result = merger.mergeSlides(targetFilePath, srcSlides, tgtSlides);
 
         Assert.assertEquals(3, tgtSlides.size());
         Assert.assertEquals(3, tgtSlides.get("Slide 1").getParagraphs().size());
@@ -82,5 +85,9 @@ public class MergerTest {
         Assert.assertEquals("Paragraph 11", tgtSlides.get("Slide 1").getParagraphs().get(0));
         Assert.assertEquals("=== Original comments from " + targetFilePath + "===", tgtSlides.get("Slide 1").getParagraphs().get(1));
         Assert.assertEquals("Paragraph 11", tgtSlides.get("Slide 1").getParagraphs().get(2));
+        Assert.assertEquals(result.size(), srcSlides.size());
+        for(int i = 0 ; i < srcSlides.size(); i++){
+            assertThat(result, hasEntry(slidesTgt.get(i).getPartName(), slidesTgt.get(i)));
+        }
     }
 }

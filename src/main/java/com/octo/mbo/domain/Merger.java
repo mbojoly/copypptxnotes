@@ -50,6 +50,7 @@ public class Merger {
                 final String srcKey = e.getKey();
                 final Slide srcSlide = srcSlides.get(srcKey);
                 final Slide tgtSlide = e.getValue();
+                log.debug("Copying comments of slides with same key \"{}\"", srcKey);
                 copyCommentIfExists(srcKey, srcSlide, tgtSlide, targetFilePath, processedKeys);
             } else {
                 Optional<String> bestKeyMatch = approachingMacher.findBestMatch(
@@ -65,9 +66,9 @@ public class Merger {
                         log.warn("SRC slide missing. No slide with key \"{}\" in the source document. This slide has been ignored.", e.getKey());
                     }
                 }
-                //Switch key from first string to partName
-                slidesPerPartName.put(e.getValue().getPartName(), e.getValue());
             }
+            //Put part name in the result. Only the slides listed here will be updated
+            slidesPerPartName.put(e.getValue().getPartName(), e.getValue());
         }
 
         //Check if some source slides are missing

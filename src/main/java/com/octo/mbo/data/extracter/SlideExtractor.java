@@ -221,6 +221,7 @@ public class SlideExtractor {
             return firstString == null ? Optional.empty() : Optional.of(firstString);
         }
 
+        //TODO : Etudier ce comportement sur un slide comme 08-WebscaleMedia.pptx "Deliver All Your Content"
         @Override
         public void accept(String s) {
             if (firstString == null) {

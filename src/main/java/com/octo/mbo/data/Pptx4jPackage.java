@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class Pptx4jPackage {
 
@@ -58,7 +60,11 @@ public class Pptx4jPackage {
      * @throws CopyNotesException for every errors
      */
     public Map<String, Slide> getSlides() throws CopyNotesException {
-        final Map<PartName, Part> hm = getPptxPartMap();
+        //Use a treeMap so that slides are processed in order of the keys.
+        //Duplicated key are replaced with a delta based on the slide number.
+        //Randomly processed slides leads to +X and -X delta which are wrongly considered as different
+        //just because the Yth slide with the same title as the 1st has been processed once after and the other time before
+        final SortedMap<PartName, Part> hm = new TreeMap<>(getPptxPartMap());
 
         log.info("Extracting comment from source file...");
         SlideExtractor slideExtractor = slideExtractorFactoryInjected.build();

@@ -50,6 +50,7 @@ import static org.mockito.Mockito.doReturn;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({SlidePart.class, PartName.class, NotesSlidePart.class})
 public class SlideExtracterTest {
+
     @Test
     public void doOnEachParagraphTest() {
         GroupShape shapeNotesMock = mock(GroupShape.class, RETURNS_DEEP_STUBS);
@@ -94,16 +95,6 @@ public class SlideExtracterTest {
 
         Assert.assertArrayEquals(new String[]{"Sample mock text 1", "Sample mock text 2", "Sample mock text 3"},
                 appenderMock.getContent().toArray(new String[0]));
-    }
-
-    @Test
-    public void FirstStringAppenderTest() {
-        SlideExtractor.FirstStringAppender firstStringAppender = new SlideExtractor.FirstStringAppender();
-
-        firstStringAppender.accept("String 1");
-        firstStringAppender.accept("String 2");
-
-        Assert.assertEquals(Optional.of("String 1"), firstStringAppender.getContent());
     }
 
     @Test

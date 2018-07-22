@@ -214,19 +214,26 @@ public class SlideExtractor {
     }
 
     static class FirstStringAppender implements Appender<String, Optional<String>> {
+        public static final int MIN_FIRSTSTRING_LENGTH = 8;
         String firstString;
 
         @Override
         public Optional<String> getContent() {
             return firstString == null ? Optional.empty() : Optional.of(firstString);
         }
-
-        //TODO : Etudier ce comportement sur un slide comme 08-WebscaleMedia.pptx "Deliver All Your Content"
         @Override
         public void accept(String s) {
+            //Sometimes the title is not the first string that is parsed
+            //Sometimes there is no title in the slide
+            //MIN_FIRSTSTRING_LENGTH is a threshold  to try only once to find a String that has a chance to be the title
             if (firstString == null) {
                 firstString = s;
+            } else if(firstString.length() < MIN_FIRSTSTRING_LENGTH) {
+                firstString = firstString + " " + s;
+            } else if(s != null && s.length() > MIN_FIRSTSTRING_LENGTH && s.length() > firstString.length()) {
+                firstString = s;
             }
+            log.trace("accept finished, firstString is now {}", firstString);
         }
     }
 

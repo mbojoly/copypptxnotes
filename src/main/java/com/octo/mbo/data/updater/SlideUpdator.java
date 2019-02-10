@@ -16,6 +16,7 @@
 package com.octo.mbo.data.updater;
 
 
+import com.octo.mbo.data.extracter.SlideExtractor;
 import com.octo.mbo.exceptions.CopyNotesException;
 import org.docx4j.dml.*;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
@@ -24,12 +25,15 @@ import org.docx4j.openpackaging.parts.PresentationML.SlidePart;
 import org.pptx4j.pml.GroupShape;
 import org.pptx4j.pml.Notes;
 import org.pptx4j.pml.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SlideUpdator {
 
+    private static Logger log = LoggerFactory.getLogger(SlideUpdator.class);
     private final SlideUpdator dependencyInjection;
 
     public SlideUpdator() {
@@ -53,7 +57,7 @@ public class SlideUpdator {
             if (part != null && part instanceof SlidePart) {
                 SlidePart slidePart = (SlidePart) part;
                 if (slidePart.getNotesSlidePart() == null || slidePart.getNotesSlidePart().getContents() == null) {
-                    throw new CopyNotesException("Processing of documents without an existing NoteSlidePart with content is not yet implemented");
+                    throw new CopyNotesException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented. Look at Slide " + slidePart.getPartName() + " or previous one and put a dummy notes to correct the problem.");
                 }
                 Notes notesSrc = slidePart.getNotesSlidePart().getContents();
                 if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {

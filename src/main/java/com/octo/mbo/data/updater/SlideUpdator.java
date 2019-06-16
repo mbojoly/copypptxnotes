@@ -57,7 +57,7 @@ public class SlideUpdator {
             if (part != null && part instanceof SlidePart) {
                 SlidePart slidePart = (SlidePart) part;
                 if (slidePart.getNotesSlidePart() == null || slidePart.getNotesSlidePart().getContents() == null) {
-                    throw new CopyNotesException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented. Look at Slide " + slidePart.getPartName() + " or previous one and put a dummy notes to correct the problem.");
+                    throw new CopyNotesException("Processing of documents without a valid SPTree of NoteSlidePart is not yet implemented. Look at Slide " + slidePart.getPartName() + " or previous one. Putting a dummy notes may correct the problem to be investigated).");
                 }
                 Notes notesSrc = slidePart.getNotesSlidePart().getContents();
                 if (notesSrc == null || notesSrc.getCSld() == null || notesSrc.getCSld().getSpTree() == null) {
@@ -68,6 +68,8 @@ public class SlideUpdator {
             }
         } catch (Docx4JException docx4jex) {
             throw new CopyNotesException("Unable to get slide contents", docx4jex);
+        } catch (CopyNotesException copyNex) {
+            log.warn("Fallback: ignore slide due to error " + copyNex.toString());
         }
     }
 
